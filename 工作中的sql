@@ -1,3 +1,0 @@
-模拟generate_series() in PostgreSQL 
-select date from (select date_format(adddate(MAKEDATE(year(now()),1), @num:=@num+1),'%Y-%m-%d') date from your_table,(select @num:=-1) num
-limit 366 ) as dt
