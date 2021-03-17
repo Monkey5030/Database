@@ -13,6 +13,7 @@
 - [数据库预热](#数据库预热)
 - [存储函数和函数](#存储函数和函数)
 - [技巧](#技巧)
+- [错误解决](#错误解决)
 
 <!-- /TOC -->
 # 命令行操作  
@@ -287,3 +288,85 @@ select a.ID,substring_index(substring_index(a.mSize,',',b.help_topic_id+1),',',-
 from   tbl_name a  join  mysql.help_topic b  
 on b.help_topic_id < (length(a.mSize) - length(replace(a.mSize,',',''))+1)  
 order by a.ID;  
+7. mysql实现排名函数    
+* 建表  
+`CREATE TABLE city_popularity(
+    region int(10) NOT NULL COMMENT '1 国内 2 海外',
+    city_name VARCHAR(64) NOT NULL,
+    popularity DOUBLE(5,2) NOT NULL);`
+* 向表中插入数据  
+```
+INSERT INTO city_popularity (region, city_name, popularity)
+VALUES
+(1, '北京', 30.0),
+(1, '上海', 30.0),
+(1, '南京', 10.0),
+(2, '伦敦', 20.0),
+(1, '张家界', 8.0),
+(2, '纽约', 35.0),
+(1, '三亚', 25.0),
+(2, '新加坡', 35.0);
+```
+
+region | city_name | popularity  
+---|---|---  
+1 | 北京 | 30.0  
+1 | 上海 | 30.0  
+1 | 南京 | 10.0  
+2 | 伦敦 | 20.0  
+1 | 张家界 | 8.0  
+2 | 纽约 | 35.0  
+1 | 三亚 | 25.0  
+2 | 新加坡 | 35.0  
+
+对数据进行排序  
+  * 通过窗口函数  
+  MySQL从8.0开始支持窗口函数，也叫分析函数，序号函数ROW_NUMBER(), RANK(), DENSE_RANK()满足不同需求的排序  
+  `SELECT region, city_name, popularity, 
+  ROW_NUMBER() OVER (PARTITION BY region ORDER BY popularity DESC) AS rank 
+  FROM city_popularity;`
+  * 通过表的自交  
+  `SELECT a.region, a.city_name, a.popularity, (COUNT(b.popularity)+1) AS rank 
+  FROM city_popularity AS a LEFT JOIN city_popularity AS b 
+  ON a.region = b.region AND a.popularity<b.popularity
+  GROUP BY a.region, a.city_name, a.popularity
+  ORDER BY a.region, rank;`
+  * 通过设置变量  
+  顺序排序，每多一条排序自增加一  
+  `SELECT city_popularity.*,
+  @rank := @rank+1 AS rank
+  FROM city_popularity ,(SELECT @rank:=0) init
+  ORDER BY popularity DESC;`  
+  当数据相同时，排名一致，不相同则排名自增加一  
+  `select city_popularity.*,
+  case when @popularity = popularity then @rank 
+  when @popularity := popularity then @rank :=@rank+1 
+  when @popularity =0 then @rank :=@rank+1 END as rank 
+  from city_popularity,(select @rank :=0,@popularity :=NULL) init  
+  ORDER BY popularity DESC;`  
+  数据相同的情况，排名保持不变，且占有字符  
+  `select city_popularity.*,
+  @rank1 :=@rank1+1,@rank := 
+  case when @popularity = popularity then @rank 
+  when @popularity := popularity then @rank1 
+  when @popularity =0 then @rank1 END as rank
+  from city_popularity,(select @rank :=0,@popularity :=NULL,@rank1 :=0) init  
+  ORDER BY popularity DESC;`  
+
+8. 模拟generate_series() in PostgreSQL   
+`select date from (select date_format(adddate(MAKEDATE(year(now()),1), @num:=@num+1),'%Y-%m-%d') date from your_table,(select @num:=-1) num
+limit 366 ) as dt `  
+
+# 错误解决
+- 当连接错误次数过多时，mysql会禁止客户机连接，这个时候有两个办法解决：  
+    1. 使用mysqladmin flush-hosts命令清除缓存，命令执行方法如下：  
+          命令行或终端：mysqladmin  -u  root  -p  flush-hosts  
+          接着输入root账号密码  
+    2. 修改mysql配置文件，在[mysqld]下面添加 max_connect_errors=1000，然后重启mysql  
+
+    查看死锁日志  
+    show engine innodb status  
+- 字符串  
+    char在存储的时候会将右侧空格进行剔除，保留左侧空格。  
+    varchar在存储的时候保留所有空格，不进行任何删除  
+    varchar和char在查询的时候都只会根据where条件中的左侧空格进行判断，右侧末尾的空格会忽略  
