@@ -21,8 +21,19 @@ show status like 'Com_%';
 通过以上几个参数，可以很容易地了解当前数据库的应用是以插入更新为主还是以查询操作为主，以及各种类型的SQL 大致的执行比例是多少。  
 
 - 查找数据库文件大小  
-SELECT  table_schema AS `Database`, table_name AS `Table`, SUM(ROUND(((data_length + index_length) / 1024 / 1024), 2)) `Size in MB`   
-FROM information_schema.TABLES WHERE information_schema.TABLES.TABLE_SCHEMA='haiguan_68W' GROUP BY information_schema.TABLES.TABLE_SCHEMA,information_schema.TABLES.TABLE_NAME WITH ROLLUP  
+ ```
+SELECT
+	table_schema AS 'DATABASE',
+	table_name AS 'TABLE',
+	SUM( ROUND( ( ( data_length + index_length ) / 1024 / 1024 ), 2 ) ) 'Size IN MB '
+FROM
+	information_schema.TABLES 
+WHERE
+	information_schema.TABLES.TABLE_SCHEMA = 'boguan360' 
+GROUP BY
+	information_schema.TABLES.TABLE_SCHEMA,
+	information_schema.TABLES.TABLE_NAME WITH ROLLUP  
+  ```
 
 ANALYZE TABLE tablename;  
 check table tablename;  
