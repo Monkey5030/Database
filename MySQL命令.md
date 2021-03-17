@@ -3,9 +3,8 @@
 - [命令行操作](#命令行操作)
 - [权限与安全](#权限与安全)
 - [临时开启通用查询日志](#临时开启通用查询日志)
-- [二进制命令](#二进制命令)
 - [sql_mode](#sql_mode)
-- [二进制日志](#二进制日志)
+- [二进制命令](#二进制命令)
 - [复制、备份与恢复](#复制备份与恢复)
 - [主从复制的服务器配置](#主从复制的服务器配置)
 - [开发规范](#开发规范)
@@ -80,13 +79,7 @@ show warnings
 perror 错误号  
 show status like 'handler%';检查是否使用了索引  
   
-# 二进制命令  
-二进制日志（binary log）记录了对MySQL数据库执行更改的所有操作，但是不包括SELECT和SHOW这类操作，因为这类操作对数据本身并没有修改。然而，若操作本身并没有导致数据库发生变化，那么该操作可能也会写入二进制日志。  
-SHOW BINLOG EVENTS IN 'mysql-bin.000001'  
-  
-binlog_format  
-row  statement mixed三种格式RBR SBR MBR  
-在row格式下，开启binlog_rows_query_log_events参数  
+
   
 # sql_mode  
 解析  
@@ -124,7 +117,12 @@ NO_ENGINE_SUBSTITUTION：
 [mysqld]  
 sql_mode='你想要的模式'  
 
-# 二进制日志
+# 二进制命令  
+二进制日志（binary log）记录了对MySQL数据库执行更改的所有操作，但是不包括SELECT和SHOW这类操作，因为这类操作对数据本身并没有修改。然而，若操作本身并没有导致数据库发生变化，那么该操作可能也会写入二进制日志。  
+SHOW BINLOG EVENTS IN 'mysql-bin.000001'  
+binlog_format  
+row  statement mixed三种格式RBR SBR MBR  
+在row格式下，开启binlog_rows_query_log_events参数  
 - 二进制日志的删除  
 服务器自动清理旧的binlog文件，需设置expire-logs-days选项  
 purge binary logs before datetime  
