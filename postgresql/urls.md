@@ -5,3 +5,8 @@
 [MADlib](https://gpdb.docs.pivotal.io/6-12/analytics/madlib.html#topic3)  
 [MADlib官网](http://madlib.apache.org/)  
 [madlib机器学习算法](http://madlib.incubator.apache.org/docs/latest/index.html)  
+[A Crash Course in Python for Scientists](https://nbviewer.jupyter.org/gist/anonymous/5924718)  
+[python api](https://overapi.com/python)  
+[Learn X in Y minutes](https://learnxinyminutes.com/docs/python/)  
+[Problem Solving with Algorithms and Data Structures using Python](https://runestone.academy/runestone/books/published/pythonds/index.html)  
+[trending](https://github.com/trending/python)  
