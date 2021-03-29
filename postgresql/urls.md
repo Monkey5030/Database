@@ -10,3 +10,4 @@
 [Learn X in Y minutes](https://learnxinyminutes.com/docs/python/)  
 [Problem Solving with Algorithms and Data Structures using Python](https://runestone.academy/runestone/books/published/pythonds/index.html)  
 [trending](https://github.com/trending/python)  
+[pandas vs SQL](https://pandas.pydata.org/pandas-docs/stable/getting_started/comparison/comparison_with_sql.html)  
