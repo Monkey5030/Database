@@ -11,3 +11,5 @@
 [Problem Solving with Algorithms and Data Structures using Python](https://runestone.academy/runestone/books/published/pythonds/index.html)  
 [trending](https://github.com/trending/python)  
 [pandas vs SQL](https://pandas.pydata.org/pandas-docs/stable/getting_started/comparison/comparison_with_sql.html)  
+[faker库的使用1](https://zhuanlan.zhihu.com/p/87203290)  
+[faker库的使用2](https://blog.csdn.net/qq_39431417/article/details/109637657)  
