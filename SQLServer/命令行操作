@@ -1,0 +1,26 @@
+osql -S 127.0.0.1 -Usa -P Sql2008 -d Test -i E:\git\tang_poetry\tang_poetry2.sql
+
+字段不正确或语法错误,脚本中包含中文 
+SQL脚本文件编码最好是存成GB2312的，而不是UTF-8
+修改sql脚本文件的编码为GB2312
+
+
+将数据库导出到文本文件
+declare @host varchar(50),--主机ip地址 如127.0.0.1
+@user varchar(50), --数据库登录用户名  sa
+@pwd varchar(20), --数据库登录密码  123456
+@databasename1 varchar(30),  --将那个库的数据导出
+@filepath VARCHAR(50)--导出到本地的存放路径
+select @host='10.0.0.212' ,@user='sa',@pwd='Sql2008',@databasename1='hytindustry_yc',@filepath='e:\0902\'
+SELECT 
+'bcp '+@databasename1+'.'+ 
+sys.schemas.name+'.'+sysobjects.name
+ + ' out '+@filepath +sys.schemas.name+'_'+sysobjects.name+'.txt -S' +@host+' -U'+@user+ ' -P '+@pwd +' -c'
+ FROM sys.sysobjects 
+inner JOIN 
+ sys.tables ON sysobjects.name=tables.name
+ AND object_id=id
+ INNER join
+ sys.schemas ON
+ schemas.schema_id=tables.schema_id
+ WHERE tables.type='u' ORDER BY sys.tables.schema_id,sysobjects.name

@@ -1,0 +1,65 @@
+清理内存
+
+Sql Server系统内存管理在没有配置内存最大值，很多时候我们会发现运行Sql Server的系统内存往往居高不下。这是由于他对于内存使用的策略是有多少闲置的内存就占用多少，直到内存使用虑达到系统峰值时（预留内存根据系统默认预留使用为准，至少4M），才会清除一些缓存释放少量的内存为新的缓存腾出空间。
+ 
+这些内存一般都是Sql Server运行时候用作缓存的，例如你运行一个select语句， 执行个存储过程，调用函数；
+ 
+1. 数据缓存：执行个查询语句，Sql Server会将相关的数据页（Sql Server操作的数据都是以页为单位的）加载到内存中来， 下一次如果再次请求此页的数据的时候，就无需读取磁盘了，大大提高了速度。
+ 
+2.执行命令缓存：在执行存储过程，自定义函数时，Sql Server需要先二进制编译再运行，编译后的结果也会缓存起来， 再次调用时就无需再次编译。
+ 
+在我们执行完相应的查询语句，或存储过程，如果我们不在需要这些缓存，我可以将它清除，DBCC管理命令缓存清除如下：
+[sql]  
+  --清除存储过程缓存   
+  
+DBCC FREEPROCCACHE      
+  
+--注：方便记住关键字 FREEPROCCACHE 可以拆解成 FREE(割舍，清除) PROC（存储过程关键字简写），CACHE（缓存）  
+ 
+[sql]  
+--清除会话缓存  
+  
+ DBCC FREESESSIONCACHE   
+  
+--注： FREE(割舍，清除) SESSION（会话） CACHE（缓存）   
+ 
+[sql]  
+--清除系统缓存  
+  
+ DBCC FREESYSTEMCACHE('All')  
+  
+--注：FREE  SYSTEM CACHE  
+[sql]  
+--清除所有缓存  
+  
+ DBCC DROPCLEANBUFFERS  
+  
+--注： DROP CLEAN BUFFERS  
+ 
+虽然我们已经清除了缓存，但是sql并未释放相应占用的内存。 它只是腾出新的空间为之后所执行脚本所用。Sql Server  并没有提供任何命令允许我们释放不用到的内存。因此我们只能通过动态调整 Sql Server可用的物理内存设置来强迫它释放内存。
+操作原理是调整内存配置大小。手动操作方法:
+1.打开Sql Server Management(企业管理器);
+2.打开Sql Server实例的属性面板;
+3.找到内存设置，改变其中的最大服务器内存使用即可 。
+ 
+使用脚本操作：
+ 
+[sql]  
+
+ 
+下面提供内存查看功能的一些脚本语句：
+[sql]  
+  --内存使用情况       
+      
+SELECT * FROM sys.dm_os_performance_counters   
+WHERE counter_name IN ('Target Server Memory (KB)','Total Server Memory (KB)')   
+ 
+[sql]  
+-- 内存状态   
+DBCC MemoryStatus   
+ 
+[sql]  
+--查看最小最大内存   
+SELECT configuration_id as id,name as 名称,minimum as 配置最小值, maximum as 最大值,   
+is_dynamic as 是否动态值, is_advanced as 是否优先, value_in_use AS 运行值,   
+description as 描述 FROM sys.configurations  

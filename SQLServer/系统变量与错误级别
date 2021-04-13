@@ -1,0 +1,132 @@
+1、@@IDENTITY
+返回最后插入的标识值。这个变量很有用，当你插入一行数据时，想同时获得该行的的ID（标示列），就可以用@@IDENTITY
+示例：下面的示例向带有标识列的表中插入一行，并用 @@IDENTITY 显示在新行中使用的标识值。
+INSERT INTO jobs (job_desc,min_lvl,max_lvl) VALUES ('Accountant',12,125)
+SELECT @@IDENTITY AS 'Identity'
+
+2、@@ROWCOUNT
+返回受上一语句影响的行数。
+示例：下面的示例执行 UPDATE 语句并用 @@ROWCOUNT 来检测是否有发生更改的行。
+UPDATE authors SET au_lname = 'Jones'  WHERE au_id = '999-888-7777'
+IF @@ROWCOUNT = 0
+print 'Warning: No rows were updated'
+
+3、@@CONNECTIONS
+返回自上次启动 Microsoft SQL Server以来连接或试图连接的次数。
+示例：下面的示例显示了到当前日期和时间为止试图登录的次数。
+SELECT GETDATE() AS 'Date and Time', @@CONNECTIONS AS 'Login Attempts'
+
+4、@@CPU_BUSY
+返回自上次启动 Microsoft SQL Server以来 CPU 的工作时间，单位为毫秒（基于系统计时器的分辨率）。
+示例：下面的示例显示了到当前日期和时间为止 SQL Server CPU 的活动
+SELECT @@CPU_BUSY AS 'CPU ms', GETDATE() AS 'As of'
+
+5、@@DATEFIRST
+返回 SET DATEFIRST 参数的当前值，SET DATEFIRST 参数指明所规定的每周第一天：1 对应星期一，2 对应星期二，依次类推，用 7 对应星期日。
+示例：下面的示例将每周第一天设为 5 （星期五），并假定当日是星期六。SELECT 语句返回 DATEFIRST 值和当日是此周的第几天。
+SET DATEFIRST 5
+SELECT @@DATEFIRST AS '1st Day', DATEPART(dw, GETDATE()) AS 'Today'
+
+6、@@IO_BUSY
+返回 Microsoft SQL Server自上次启动后用于执行输入和输出操作的时间，单位为毫秒（基于系统计时器的分辨率）。
+示例：下面的示例显示 SQL Server 自启动到目前已用于执行输入/输出操作的毫秒数。
+SELECT @@IO_BUSY AS 'IO ms', GETDATE() AS 'As of'
+
+7、@@LANGID
+返回当前所使用语言的本地语言标识符(ID)。
+示例：下面的示例将当前会话的语言设置为意大利语 (Italian)，然后用 @@LANGID 返回意大利语的 ID。
+SET LANGUAGE 'Italian'
+SELECT @@LANGID AS 'Language ID'
+
+8、@@LANGUAGE
+返回当前使用的语言名。
+示例：下面的示例返回当前会话的语言。
+SELECT @@LANGUAGE AS 'Language Name'
+
+9、@@MAX_CONNECTIONS
+返回 Microsoft SQL Server上允许的同时用户连接的最大数。返回的数不必为当前配置的数值。
+示例：下面的示例假定 SQL Server 尚未被重新配置更少的用户连接。
+SELECT @@MAX_CONNECTIONS
+
+10、@@PACK_RECEIVED
+返回 Microsoft SQL Server自上次启动后从网络上读取的输入数据包数目。
+示例
+SELECT @@PACK_RECEIVED
+
+11、@@PACK_SENT
+返回 Microsoft SQL Server自上次启动后写到网络上的输出数据包数目。
+示例
+SELECT @@PACK_SENT
+
+12、@@PACKET_ERRORS
+返回自 SQL Server 上次启动后，在 Microsoft SQL Server连接上发生的网络数据包错误数。
+示例
+SELECT @@PACKET_ERRORS
+
+13、@@SERVERNAME
+返回运行 Microsoft SQL Server的本地服务器名称。
+示例
+SELECT @@SERVERNAME
+
+14、@@SERVICENAME
+返回 Microsoft SQL Server正在其下运行的注册表键名。若当前实例为默认实例，则 @@SERVICENAME 返回 MSSQLServer；若当前实例是命名实例，则该函数返回实例名。
+示例
+SELECT @@SERVICENAME
+
+15、@@SPID
+返回当前用户进程的服务器进程标识符 (ID)。
+示例：下面的示例返回当前用户进程的进程 ID、登录名和用户名。
+SELECT @@SPID AS 'ID', SYSTEM_USER AS 'Login Name', USER AS 'User Name'
+
+16、@@TIMETICKS
+返回一刻度的微秒数。
+示例
+SELECT @@TIMETICKS
+
+17、@@TOTAL_ERRORS
+返回 Microsoft SQL Server自上次启动后，所遇到的磁盘读/写错误数。
+示例：下面的示例显示了 SQL Server 到当前日期和时间为止所遇到的错误数。
+SELECT @@TOTAL_ERRORS AS 'Errors', GETDATE() AS 'As of'
+
+18、@@TOTAL_WRITE
+返回 Microsoft SQL Server自上次启动后写入磁盘的次数。
+示例：下面的示例显示了到当前日期和时间为止总的磁盘读写次数。
+SELECT @@TOTAL_READ AS 'Reads', @@TOTAL_WRITE AS 'Writes', GETDATE() AS 'As of'
+
+19、@@VERSION
+返回 Microsoft SQL Server当前安装的日期、版本和处理器类型。
+示例：下面的示例返回当前安装的日期、版本和处理器类型。
+SELECT @@VERSION
+
+20、@@TOTAL_READ
+返回 Microsoft SQL Server自上次启动后读取磁盘（不是读取高速缓存）的次数。
+示例：下面的示例显示了到当前日期和时间为止的总的磁盘读写次数。
+SELECT @@TOTAL_READ AS 'Reads', @@TOTAL_WRITE AS 'Writes', GETDATE() AS 'As of'
+
+错误级别
+严重级别
+描述
+0-9 返回不太严重的状态信息或报表错误的信息性消息。 数据库引擎 不会引起严重级别为 0 到 9 的系统错误。
+10 返回不太严重的状态信息或报表错误的信息性消息。 由于兼容性原因， 数据库引擎 在将错误信息返回到调用应用程序前将严重性级别从 10 转换为 0。
+11-16 指示可由用户纠正的错误。
+11 指示给定的对象或实体不存在。
+12 特殊严重性，用于因特殊查询提示而不使用锁定的查询。 在某些情况下，因为没有用锁保证一致性，由这些语句所执行的读取操作会产生不一致的数据。
+13 指示事务死锁错误。
+14 指示安全性相关错误，如权限被拒绝。
+15 指示 Transact-SQL?命令中的语法错误。
+16 指示可由用户纠正的常规错误。
+17-19 指示无法由用户纠正的软件错误。 请将问题通知系统管理员。
+17 指示语句导致 SQL Server?用尽资源（如数据库的内存、锁或磁盘空间）或超出了系统管理员设置的某些限制。
+18 指示 数据库引擎 软件中有问题，但可完成执行语句，并且可维护到 数据库引擎 实例的连接。 每当出现严重级别为 18 的消息时均应通知系统管理员。
+19 指示超出了不可配置的 数据库引擎 限制并且当前批处理已终止。 严重级别为 19 或更高的错误消息将停止执行当前的批处理。 严重级别为 19 的错误很少，必须由系统管理员或主要支持提供商更正。 当引发严重级别为 19 的消息时，请与系统管理员联系。 严重级别从 19 到 25 的错误消息均写入错误日志。
+20-24 指示系统问题并且是致命错误，这意味着正在执行某语句或批处理的 数据库引擎 任务已停止运行。 此任务记录了所发生事件的有关信息，然后终止。 在大多数情况下，应用程序与 数据库引擎 实例的连接也可能终止。 如果发生这种情况，该问题可能使应用程序无法重新连接。
+此范围内的错误消息可以影响同一数据库中所有正在访问数据的进程，并可能指示数据库或对象已损坏。 严重级别从 19 到 24 的错误消息均写入错误日志。
+20 指示语句遇到了问题。 由于该问题只影响了当前任务，数据库本身未必已经损坏。
+21 指示遇到了影响当前数据库中所有任务的问题，但数据库本身未必已经损坏。
+22 指示消息中所指定的表或索引因软件或硬件问题而损坏。
+很少发生严重级别为 22 的错误。 如果发生这种错误，请运行 DBCC CHECKDB 以确定数据库中的其他对象是否也已损坏。 这种问题可能只是出现在缓存中而不存在于磁盘本身。 如果发生此错误，请重新启动 数据库引擎 实例更正此问题。 若要继续工作，则必须重新连接到 数据库引擎实例；否则，请使用 DBCC 修复该问题。 在某些情况下，可能需要还原数据库。
+如果重新启动 数据库引擎 的实例不能解决此问题，那么问题就是出在磁盘上。 有时，销毁错误消息中指定的对象可以解决此问题。例如，如果消息报告 数据库引擎 的实例在非聚集索引中发现了长度为 0 的行，则请删除该索引并重建。
+23 指示整个数据库的完整性因硬件或软件问题而出现问题。
+很少发生严重级别为 23 的错误。 如果发生这种错误，请运行 DBCC CHECKDB 以确定损坏的程度。 这种问题可能只是出现在缓存中而未出现在磁盘本身。 如果发生此错误，请重新启动 数据库引擎 实例更正此问题。 若要继续工作，则必须重新连接到 数据库引擎实例；否则，请使用 DBCC 修复该问题。 在某些情况下，可能需要还原数据库。
+24 指示介质故障。 系统管理员可能需要还原数据库。 您可能还需要致电硬件供应商
+ 

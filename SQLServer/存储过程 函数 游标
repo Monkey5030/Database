@@ -1,0 +1,48 @@
+计算两个日期之间的工作日
+CREATE FUNCTION [dbo].[f_WorkDay](
+@dt_begin datetime, --计算的开始日期
+@dt_end datetime  --计算的结束日期
+)RETURNS int
+AS
+BEGIN
+DECLARE @workday int,@i int,@bz bit,@dt datetime
+IF @dt_begin>@dt_end
+ SELECT @bz=1,@dt=@dt_begin,@dt_begin=@dt_end,@dt_end=@dt
+ELSE
+ SET @bz=0
+SELECT @i=DATEDIFF(Day,@dt_begin,@dt_end)+1,
+ @workday=@i/7*5,
+ @dt_begin=DATEADD(Day,@i/7*7,@dt_begin)
+WHILE @dt_begin<=@dt_end
+BEGIN
+ SELECT @workday=CASE
+ WHEN (@@DATEFIRST+DATEPART(Weekday,@dt_begin)-1)%7 BETWEEN 1 AND 5
+ THEN @workday+1 ELSE @workday END,
+ @dt_begin=@dt_begin+1
+END
+RETURN(CASE WHEN @bz=1 THEN -@workday ELSE @workday END)
+END
+
+![Image cursor](https://raw.githubusercontent.com/Monkey5030/SQL-Server/master/cursor.png)
+游标
+--游标定义
+DECLARE cu CURSOR FOR SELECT * FROM TEST;
+--表变量定义
+DECLARE @table TABLE
+(
+    id INT
+);
+
+DECLARE @i INT = 0;
+WHILE @i < 10
+BEGIN
+    INSERT INTO @table
+    (
+        id
+    )
+    VALUES
+    (@i );
+    SET @i = @i + 1;
+END;
+SELECT *
+FROM @table;

@@ -1,0 +1,22 @@
+sqlserver中的排序函数
+1、Rank：在结果集中每一条记录所在的排名位置，但排名可能不连续，比如：若同一组内有两个第一名，则该组内下一个名次直接跳至第三名
+ select *,Rank() over (partition by modifieddate order by locationid ) as Rank from Production.ProductInventory 
+
+
+2、Dense_Rank：功能与Rank相似。但排名的数值是连续的，比如：若同一组内有两个第一名，则该组内下一个名次为第二名
+select *,dense_Rank() over (partition by modifieddate order by locationid ) as Rank from Production.ProductInventory 
+
+
+3、Row_Number：依据组显示每一条记录在该组中出现的位置，比如：若有两个第一名。则这两个第一名在一组内排名为1、2，下一组的排序仍从1開始，依次类推
+select *,row_number() over (partition by productid  order by productid ) as Rank from Production.ProductInventory 
+
+
+4、NTILE：依据指定的分组数量将结果集分区，并记录其在组中的位置。
+能够对结果集的数据排序后。依照指定的数量把结果集分成N组，并给予每组一个组编号，分组的方式非常easy，将结果集的总记录数除以N，若有余数M，则前M组都多增一条记录，因此，并不是全部的组都有同样的记录数。但多记录的组最多仅仅有一条记录。
+
+select top 13 *,NTILE(2) over (partition by productid  order by locationid ) as Rank from Production.ProductInventory 
+
+
+上述四个函数语法格式同样，都要搭配OVER子句，并且要以指定切分或排序记录的方式，OVER子句定议格式例如以下：
+Over（【Partition BY <提供数值的描写叙述方式>】 ORDER BY <字段> [DES|ASC]）
+Partition BY 子句决定排名记录的分组方式，而Order By 子句决定每一组记录要怎样排序，假设省略了Partition by 子句，则所有记录为一组

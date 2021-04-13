@@ -1,0 +1,14 @@
+stuff函数的使用
+STUFF ( character_expression , start , length ,character_expression ) 
+参数 
+character_expression 
+一个字符数据表达式。character_expression 可以是常量、变量，也可以是字符列或二进制数据列。
+
+start 
+一个整数值，指定删除和插入的开始位置。如果 start 或 length 为负，则返回空字符串。如果 start 比第一个character_expression 长，则返回空字符串。start 可以是 bigint 类型。
+
+length 
+一个整数，指定要删除的字符数。如果 length 比第一个 character_expression 长，则最多删除到最后一个character_expression 中的最后一个字符。length 可以是 bigint 类型。
+
+返回类型 
+如果 character_expression 是受支持的字符数据类型，则返回字符数据。如果 character_expression 是一个受支持的 binary 数据类型，则返回二进制数据

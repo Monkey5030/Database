@@ -1,0 +1,58 @@
+更新前10排名的值
+UPDATE [mtAppMahjong].[dbo].[tChargeRankRewards]
+SET [type] = 1,
+    [value] = tChargeRankRewards.[rmb] * 100 * 50,
+    [inputdate] = GETDATE()
+WHERE ISNULL([type], 0) = 0
+      AND tChargeRankRewards.[rank] = 1;
+UPDATE [mtAppMahjong].[dbo].[tChargeRankRewards]
+SET [type] = 1,
+    [value] = tChargeRankRewards.[rmb] * 100 * 30,
+    [inputdate] = GETDATE()
+WHERE ISNULL([type], 0) = 0
+      AND tChargeRankRewards.[rank] = 2;
+UPDATE [mtAppMahjong].[dbo].[tChargeRankRewards]
+SET [type] = 1,
+    [value] = tChargeRankRewards.[rmb] * 100 * 20,
+    [inputdate] = GETDATE()
+WHERE ISNULL([type], 0) = 0
+      AND tChargeRankRewards.[rank] = 3;
+UPDATE [mtAppMahjong].[dbo].[tChargeRankRewards]
+SET [type] = 1,
+    [value] = tChargeRankRewards.[rmb] * 100 * 10,
+    [inputdate] = GETDATE()
+WHERE ISNULL(tChargeRankRewards.[type], 0) = 0
+      AND
+      (
+          tChargeRankRewards.[rank] >= 4
+          OR tChargeRankRewards.[rank] <= 10
+      );
+
+
+UPDATE mtAppMahjong.dbo.tChargeRankRewards
+SET type = 1,
+    inputdate = GETDATE(),
+    value = (CASE
+                 WHEN ISNULL(type, 0) = 0 THEN
+                     CASE
+                         WHEN rank = 1 THEN
+                             tChargeRankRewards.[rmb] * 100 * 50
+                         WHEN rank = 2 THEN
+                             tChargeRankRewards.[rmb] * 100 * 30
+                         WHEN rank = 3 THEN
+                             tChargeRankRewards.[rmb] * 100 * 20
+                         WHEN rank >= 4
+                              AND rank <= 10 THEN
+                             tChargeRankRewards.[rmb] * 100 * 20
+                         ELSE
+                             NULL
+                     END
+                 ELSE
+                     NULL
+             END
+            ),
+    notice = '恭喜您:\n在' + CONVERT(VARCHAR(50), DATEADD(DAY, -1, [tChargeRankRewards].[inputdate]), 111) + '\n获得充值榜第'
+             + CAST([tChargeRankRewards].[rank] AS VARCHAR(50)) + '名，奖励'
+             + CAST([tChargeRankRewards].[value] AS VARCHAR(50)) + '金币。\n' + '客服电话：4008-217-233(免长途);021-64399736\n'
+WHERE rank <= 10
+      AND notice IS NULL;

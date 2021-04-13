@@ -1,0 +1,159 @@
+
+https://www.cnblogs.com/OpenCoder/archive/2010/03/18/1689321.html
+
+1、启用Ad Hoc Distributed Queries
+
+在使用openrowset/opendatasource前搜先要启用Ad Hoc Distributed Queries服务，因为这个服务不安全所以SqlServer默认是关闭的
+
+启用Ad Hoc Distributed Queries的方法
+
+SQL Server 阻止了对组件 'Ad Hoc Distributed Queries' 的 STATEMENT'OpenRowset/OpenDatasource'
+
+的访问，因为此组件已作为此服务器安全配置的一部分而被关闭。系统管理员可以通过使用
+
+sp_configure 启用 'Ad Hoc Distributed Queries'。有关启用 'Ad Hoc Distributed Queries' 的详细
+
+信息，请参阅 SQL Server 联机丛书中的 "外围应用配置器"。
+启用Ad Hoc Distributed Queries的方法，执行下面的查询语句就可以了：
+
+exec sp_configure 'show advanced options',1
+reconfigure
+exec sp_configure 'Ad Hoc Distributed Queries',1
+reconfigure
+使用完毕后，记得一定要要关闭它，因为这是一个安全隐患,切记执行下面的SQL语句
+
+exec sp_configure 'Ad Hoc Distributed Queries',0
+reconfigure
+exec sp_configure 'show advanced options',0
+reconfigure 
+
+
+
+
+
+
+2、使用示例
+
+
+--创建链接服务器 
+exec sp_addlinkedserver   'ITSV ', ' ', 'SQLOLEDB ', '远程服务器名或ip地址 ' 
+exec sp_addlinkedsrvlogin 'ITSV ', 'false ',null, '用户名 ', '密码 ' 
+
+--查询示例 
+select * from ITSV.数据库名.dbo.表名 
+
+--导入示例 
+select * into 表 from ITSV.数据库名.dbo.表名 
+
+--以后不再使用时删除链接服务器 
+exec sp_dropserver  'ITSV ', 'droplogins ' 
+
+--连接远程/局域网数据(openrowset/openquery/opendatasource) 
+--1、openrowset 
+
+--查询示例 
+select * from openrowset( 'SQLOLEDB ', 'sql服务器名 '; '用户名 '; '密码 ',数据库名.dbo.表名) 
+
+--生成本地表 
+select * into 表 from openrowset( 'SQLOLEDB ', 'sql服务器名 '; '用户名 '; '密码 ',数据库名.dbo.表名) 
+
+--把本地表导入远程表 
+insert openrowset( 'SQLOLEDB ', 'sql服务器名 '; '用户名 '; '密码 ',数据库名.dbo.表名) 
+select *from 本地表 
+
+--更新本地表 
+update b 
+set b.列A=a.列A 
+from openrowset( 'SQLOLEDB ', 'sql服务器名 '; '用户名 '; '密码 ',数据库名.dbo.表名)as a inner join 本地表 b 
+on a.column1=b.column1 
+
+--openquery用法需要创建一个连接 
+
+--首先创建一个连接创建链接服务器 
+exec sp_addlinkedserver   'ITSV ', ' ', 'SQLOLEDB ', '远程服务器名或ip地址 ' 
+--查询 
+select * 
+FROM openquery(ITSV,  'SELECT *  FROM 数据库.dbo.表名 ') 
+--把本地表导入远程表 
+insert openquery(ITSV,  'SELECT *  FROM 数据库.dbo.表名 ') 
+select * from 本地表 
+--更新本地表 
+update b 
+set b.列B=a.列B 
+FROM openquery(ITSV,  'SELECT * FROM 数据库.dbo.表名 ') as a  
+inner join 本地表 b on a.列A=b.列A 
+
+--3、opendatasource/openrowset 
+SELECT   * 
+FROM   opendatasource( 'SQLOLEDB ',  'Data Source=ip/ServerName;User ID=登陆名;Password=密码 ' ).test.dbo.roy_ta 
+--把本地表导入远程表 
+insert opendatasource( 'SQLOLEDB ',  'Data Source=ip/ServerName;User ID=登陆名;Password=密码 ').数据库.dbo.表名 
+select * from 本地表
+
+ 
+
+ 
+
+3、自己写的例子
+
+ 
+
+
+--openrowset使用OLEDB的一些例子
+select * from openrowset('SQLOLEDB','Server=(local);PWD=***;UID=sa;','select * from TB.dbo.school') as t
+select * from openrowset('SQLOLEDB','Server=(local);PWD=***;UID=sa;',TB.dbo.school) as t
+select * from openrowset('SQLOLEDB','Server=(local);Trusted_Connection=yes;',TB.dbo.school) as t
+select * from openrowset('SQLOLEDB','(local)';'sa';'***','select * from TB.dbo.school') as t
+select * from openrowset('SQLOLEDB','(local)';'sa';'***',TB.dbo.school) as t
+select * from openrowset('SQLOLEDB','(local)';'sa';'***','select school.id as id1,people.id as id2 from TB.dbo.school inner join TB.dbo.people on school.id=people.id') as t
+
+--openrowset使用SQLNCLI的一些例子(SQLNCLI在SqlServer2005以上才能使用)
+select * from openrowset('SQLNCLI','(local)';'sa';'***','select * from TB.dbo.school') as t
+select * from openrowset('SQLNCLI','Server=(local);Trusted_Connection=yes;','select * from TB.dbo.school') as t
+select * from openrowset('SQLNCLI','Server=(local);UID=sa;PWD=***;','select * from TB.dbo.school') as t
+select * from openrowset('SQLNCLI','Server=(local);UID=sa;PWD=***;',TB.dbo.school) as t
+select * from openrowset('SQLNCLI','Server=(local);UID=sa;PWD=***;DataBase=TB','select * from dbo.school') as t
+
+--openrowset其他使用
+insert openrowset('SQLNCLI','Server=(local);Trusted_Connection=yes;','select name from TB.dbo.school where id=1') values('ghjkl')/*要不要where都一样，插入一行*/
+update openrowset('SQLNCLI','Server=(local);Trusted_Connection=yes;','select name from TB.dbo.school where id=1') set name='kkkkkk'
+delete from openrowset('SQLNCLI','Server=(local);Trusted_Connection=yes;','select name from TB.dbo.school where id=1')
+
+
+
+
+
+
+
+--opendatasource使用SQLNCLI的一些例子
+select * from opendatasource('SQLNCLI','Server=(local);UID=sa;PWD=***;').TB.dbo.school as t
+select * from opendatasource('SQLNCLI','Server=(local);UID=sa;PWD=***;DataBase=TB').TB.dbo.school as t
+
+--opendatasource使用OLEDB的例子
+select * from opendatasource('SQLOLEDB','Server=(local);Trusted_Connection=yes;').TB.dbo.school as t
+
+--opendatasource其他使用
+insert opendatasource('SQLNCLI','Server=(local);Trusted_Connection=yes;').TB.dbo.school(name) values('ghjkl')/*要不要where都一样，插入一行*/
+update opendatasource('SQLNCLI','Server=(local);Trusted_Connection=yes;').TB.dbo.school set name='kkkkkk'
+delete from opendatasource('SQLNCLI','Server=(local);Trusted_Connection=yes;').TB.dbo.school where id=1
+
+
+
+
+
+
+
+--openquery使用OLEDB的一些例子
+exec sp_addlinkedserver   'ITSV', '', 'SQLOLEDB','(local)' 
+exec sp_addlinkedsrvlogin 'ITSV', 'false',null, 'sa', '***'
+select * FROM openquery(ITSV,  'SELECT *  FROM TB.dbo.school ') 
+
+--openquery使用SQLNCLI的一些例子
+exec sp_addlinkedserver   'ITSVA', '', 'SQLNCLI','(local)' 
+exec sp_addlinkedsrvlogin 'ITSVA', 'false',null, 'sa', '***'
+select * FROM openquery(ITSVA,  'SELECT *  FROM TB.dbo.school ') 
+
+--openquery其他使用
+insert openquery(ITSVA,'select name from TB.dbo.school where id=1') values('ghjkl')/*要不要where都一样，插入一行*/
+update openquery(ITSVA,'select name from TB.dbo.school where id=1') set name='kkkkkk'
+delete openquery(ITSVA,'select name from TB.dbo.school where id=1')
