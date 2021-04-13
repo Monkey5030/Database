@@ -1,0 +1,309 @@
+随着数据不断增加，而且为了兼容以后的innodb存储引擎, 所以考虑采用mysqldump全备+日志增量备份的策略。使用mysqldump对于mysql大部分mysql存储引擎比如myisam、innodb都有很好的支持。
+
+ 
+
+方案一：mysqldump全备份+日志增量备份
+
+1， mysqldump备份方案：
+
+周一凌晨3点全备
+
+周二到周日凌晨3点增量备份
+
+ 
+
+2， 备份步骤
+
+(1)     创建备份目录，备份脚本存放目录
+
+Shell > mkdir /usr/mysqlbackup;
+
+Shell > chmod 755 /usr/mysqlbackup;
+
+Shell > mkdir /usr/mysqlbackup/daily;
+
+Shell > chmod 755 /usr/mysqlbackup/daily;
+
+Shell > mkdir /usr/script;
+
+Shell > chmod 777 /usr/script/*.sh
+
+ 
+
+(2)     启用二进制日志
+
+如果日志没有启开，必须启用binlog，要重启mysqld，首先，关闭mysqld，打开/etc/my.cnf，加入以下几行：
+
+[mysqld]
+
+log-bin
+
+然后重新启动mysqld，会产生hostname-bin.000001以及hostname-bin.index，前面的日志文件是记录所有对数据的更新操作，后面的文件是存储所有二进制文件的索引，不能轻易被删除。
+
+ 
+
+(3)     全备份，增量备份。
+
+详细见mysqlFullBackup.sh、mysqlDailyBackup.sh脚本（请注意脚本里面的备份目录、mysql软件安装目录、压缩文件名以及用户名密码，如有不符，请修改）。
+
+下面是部分shell上单个手动执行的测试命令。
+
+Shell> /usr/local/mysql/bin/mysqldump -uroot-pnYuIman25040slave201012301124 --no-create-info=FALSE --order-by-primary=FALSE--force=FALSE --no-data=FALSE --tz-utc=TRUE --flush-privileg
+
+es=FALSE --compress=FALSE --replace=FALSE--insert-ignore=FALSE --extended-insert=TRUE --quote-names=TRUE --hex-blob=TRUE--complete-insert=FALSE --add-locks=TRUE --port=3306 --d
+
+isable-keys=TRUE --delayed-insert=FALSE--create-options=TRUE --delete-master-logs=FALSE --comments=TRUE--default-character-set=utf8 --max_allowed_packet=1G --flush-logs=FALSE -
+
+-dump-date=TRUE --lock-tables=TRUE--allow-keywords=FALSE --events=FALSE --single-transaction=TRUE --routines--all-databases > /backup/mysql/full/mysql_20110104_195546.sql
+
+ 
+
+(4)    设置crontab任务，每天执行备份脚本
+
+shell> crontab –e
+
+#每个星期日凌晨3:00执行完全备份脚本
+
+0 3 * * 0 /usr/scrpit/mysqlFullBackup.sh>/dev/null 2>&1
+
+#周一到周六凌晨3:00做增量备份
+
+0 3 * * 1-6/root/MySQLBackup/mysqlDailyBackup.sh >/dev/null 2>&1
+
+(5)    清除旧的备份文件。
+
+每天去看查看下备份磁盘空间，删除旧的备份压缩文件。
+
+3， 数据库恢复
+
+ 
+
+【注释】如果增量恢复操作中报“ERROR 1051 (42S02) at line 32: Unknown table 'fin_cell_attr_his'”类似的错误，则需要现create一张空表，然后再执行增量恢复。
+
+Mysql> createtable tb1 ……;
+
+ 
+
+(1)    全恢复：
+
+用 mysqldump 备份出来的文件是一个可以直接倒入的 SQL 脚本,直接用 mysql命令恢复最后一次全备份：
+
+先从备份文件服务器上copy出来，解压缩，再恢复，例如：
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_20101216_231900.sql.tar.gz /usr/mysqlrestore/
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_binlog_20101217_030100.tar.gz /usr/mysqlrestore/
+
+Shell>cd /usr/mysqlrestore/
+
+Shell>tar -xvf mysql_20101216_231900.sql.tar.gz
+
+Shell>tar -xvf mysql_binlog_20101217_030100.tar.gz
+
+ 
+
+刷新日志：
+
+Mysql>flush logs;
+
+恢复最后一次全备份命令：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -p123456 </tmp/mysqlbackup/backup_20101215_adb.sql  
+
+恢复最后一次全备份之后的所有增量备份命令：
+
+Shell>/usr/local/mysql/bin/mysqlbinlog mysql-bin.00007 mysql-bin.00008mysql-bin.00009 mysql-bin.00010 mysql-bin.00011 | mysql
+
+检查：查看数据库结构以及数据。
+
+ 
+
+(2)    基于时间点恢复一，当天全备份之后的insert点数据故障误操作：
+
+如果上午全备份之后的insert数据被误删除, 在11点发生了误操作.可以直接用bin-log日志将数据库恢复到11点之前的那一刻,然后跳过故障时间点11点,再进行恢复下面所有的操作,命令如下:
+
+刷新日志：
+
+Mysql>flush logs;
+
+先从备份文件服务器上把binlog日志copy出来，解压缩。
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_binlog_20101221_030100.tar.gz  /usr/mysqlrestore/
+
+Shell>cd /usr/mysqlrestore/
+
+Shell>tar -xvf mysql_binlog_20101221_030100.tar.gz
+
+日志增量恢复到故障点之前
+
+Shell>/usr/local/myql/bin/mysqlbinlog --stop-date="2010-12-21 10:59:59" mysql-bin.00011|mysql -u root -p 123456
+跳过故障的时间点,继续执行后面的binlog,完成恢复
+Shell> /usr/local/myql/bin/mysqlbinlog--start-date="2010-12-21 10:59:59" mysql-bin.00011| mysql -u root -p 123456
+
+检查：
+
+用select * from tb等sql命令查看表以及数据是否恢复。
+
+(3)    基于时间点恢复二，当天11点数据故障误操作：
+
+如果上午全备份之后的insert数据被误删除, 在11点发生了误操作.丢失的数据是最后一次备份之前录入的数据，则必须先用全备份文件进行全恢复，然后可以用bin-log日志将数据库恢复到11点之前的那一刻,然后跳过故障时间点11点,再进行恢复下面所有的操作,步骤过程如下：
+
+刷新日志：
+
+Mysql>flush logs;
+
+先从备份文件服务器上copy出来，解压缩，再恢复
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/mysql_20101216_231900.sql.tar.gz /usr/mysqlrestore/
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_binlog_20101217_030100.tar.gz  /usr/mysqlrestore/
+
+Shell>cd /usr/mysqlrestore/
+
+Shell>tar -xvf mysql_20101216_231900.sql.tar.gz
+
+Shell>tar -xvf mysql_binlog_20101217_030100.tar.gz
+
+恢复最后一次全备份命令：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -p123456 < /tmp/mysqlbackup/mysql_20101216_231900.sql
+
+日志增量恢复到故障点之前
+
+Shell>/usr/local/myql/bin/mysqlbinlog --stop-date="2010-12-21 10:59:59" mysql-bin.00011|mysql -u root -p 123456
+跳过故障的时间点,继续执行后面的binlog,完成恢复
+Shell> /usr/local/myql/bin/mysqlbinlog--start-date="2010-12-21 10:59:59" mysql-bin.00011| mysql -u root -p 123456
+
+检查：
+
+用select * from tb等sql命令查看表以及数据是否恢复。
+
+ 
+
+(4)    基于时间点恢复三，昨天11点数据故障误操作：
+
+恢复流程，先全恢复，然后日志增量恢复跳过11点后继续日志增量恢复，如下：
+
+先从备份文件服务器上copy出来，解压缩，再恢复
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/mysql_20101216_231900.sql.tar.gz /usr/mysqlrestore/
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_binlog_20101217_030100.tar.gz  /usr/mysqlrestore/
+
+Shell>cd /usr/mysqlrestore/
+
+Shell>tar -xvf mysql_20101216_231900.sql.tar.gz
+
+Shell>tar -xvf mysql_binlog_20101217_030100.tar.gz
+
+刷新日志：
+
+Mysql>flush logs;
+
+全恢复：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -p123456 < /tmp/mysqlbackup/ mysql_20101216_231900.sql
+
+日志增量恢复到故障点：
+
+Shell>/usr/local/myql/bin/mysqlbinlog --stop-date="2010-12-20 10:59:59" mysql-bin.00010|mysql -u root -p 123456
+
+跳过故障点继续恢复：
+
+Shell>/usr/local/myql/bin/mysqlbinlog --start-date="2010-12-20 10:59:59" mysql-bin.00010mysql-bin.00011| mysql -u root -p 123456
+
+ 
+
+(5)    基于时间点恢复四，多故障点恢复比如2个故障点数据故障误操作：
+
+第一个故障点：2010-12-2113:41:41 –> 2010-12-21 13:42:36
+
+第二个故障点：2010-12-2113:43:16 –> 2010-12-21 13:46:05
+
+恢复流程，先全恢复，然后日志增量恢复跳过第一个故障点后继续日志增量恢复到第二个故障点，然后跳过第二个故障点继续恢复到终点，如下：
+
+先从备份文件服务器上copy出来，解压缩，再恢复
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/mysql_20101216_231900.sql.tar.gz /usr/mysqlrestore/
+
+Shell>/root/s3cmd/s3cmd get s3://csf-backup/mysqldb/ mysql_binlog_20101217_030100.tar.gz  /usr/mysqlrestore/
+
+Shell>cd /usr/mysqlrestore/
+
+Shell>tar -xvf mysql_20101216_231900.sql.tar.gz
+
+Shell>tar -xvf mysql_binlog_20101217_030100.tar.gz
+
+刷新日志：
+
+Mysql>flush logs;
+
+全恢复：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -p123456 < /tmp/mysqlbackup/ mysql_20101216_231900.sql
+
+日志增量恢复到第一个故障点之前：
+
+Shell>/usr/local/mysql/bin/mysqlbinlog --stop-date="2010-12-21 13:41:41"mysql-bin.000012| mysql -u root -p123456;
+
+跳过故障点继续恢复到第二个故障点之前：
+
+Shell> /usr/local/mysql/bin/mysqlbinlog--start-date="2010-12-21 13:42:36" --stop-date="2010-12-2113:43:16"  mysql-bin.000012 mysql-bin.000013|mysql -u root -p123456;
+
+       跳过第二个故障点恢复到flushlogs之时
+
+      Shell>/usr/local/mysql/bin/mysqlbinlog --start-date="2010-12-21 13:46:05" --stop-date="2010-12-2113:46:33" mysql-bin.000012 mysql-bin.000013| mysql -u root -p123456;
+
+检查：运用sql语句查询误操作的表以及数据是否已经恢复。
+
+(6)    恢复单一库：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -pmysql --database=csf </tmp/mysqlbackup/backup_20101215_adb_003.sql
+
+ 
+
+(7)    基于单库中的各种时间点情况恢复：
+
+请参考 以上步骤(1)到(5)，过程基本一样，只要在恢复命令后面加上一个空格和库名就可以了。
+
+(8)    恢复单库中的单张表：
+
+Mysql所提供的工具目前无法做到这一步，有个方案是：先恢复整个库到一个测试数据服务器上，然后在此服务器上导出单张表的sql，然后把这个sql导入进生产库上。
+
+在测试服务器上导入库：
+
+Shell>/usr/local/mysql/bin/mysql -uroot -pmysql --database=csf </tmp/mysqlbackup/backup_20101215_adb_003.sql
+
+ 
+
+从测试服务器导出单个表：
+
+Shell>/usr/local/mysql/bin/mysqldump --user=root -pmysql --port=3306--default-character-set=utf8  --single-transaction=TRUE "csf" "tmp_excel_data_000728" > /tmp/mysqlbackup/backup_20101215_single_table_013.sql
+
+ 
+
+在生产库上导入此表记录
+
+Shell>/usr/local/mysql/bin/mysql -uroot -pmysql csf < /tmp/mysqlbackup/backup_20101215_single_table_013.sql
+
+检查数据
+
+Select* from csf. tmp_excel_data_000728;
+
+ 
+
+(9)     电源故障恢复
+
+重启服务器之后，重启数据库，mysql自动恢复，断电时候正在运行的数据库任务和操作需要重新执行一遍。
+
+(10)  操作系统崩溃恢复
+
+  操作系统恢复之后，重启数据库，mysql自动恢复，系统崩溃时正在运行的数据库任务以及操作需要重新执行一遍
+
+(11)  文件系统崩溃恢复
+
+文件系统恢复之后，重启数据库即可，系统崩溃时正在运行的数据库任务以及操作需要重新执行一遍。
+
+(12)  硬件坏块恢复
+
+重格磁盘,然后恢复数据库。
