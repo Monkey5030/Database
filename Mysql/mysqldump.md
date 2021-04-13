@@ -4,7 +4,7 @@
 *. 无建表信息 单行插入  
 `mysqldump -t --skip-opt  --skip-tz-utc   --skip-comments -c  --skip-set-charset -uusername -p -h"127.0.0.1"    databasename  tablename> tablename.sql`
 
-*. 生成csv文件和create语句
+*. 生成csv文件和create语句  
 `mysqldump  -uroot -h127.0.0.1 -p   -c --add-locks=0   --skip-tz-utc   --skip-comments   --skip-set-charset    databasename tablename -T /mnt/  --fields-terminated-by=',' --fields-enclosed-by='\"'`
 *. mysqldump所有参数介绍
 ```
