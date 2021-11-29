@@ -94,6 +94,8 @@ Greenplum/PostgreSQL中数据表数据去重的几种方法
 psql -Ugpadmin -W -h192.168.1.28 -p12345 -dgpdpot -c "copy edge_author_2016(src,dest) from stdin with delimiter ','  NULL 'null_string' "  <  /opt/oracledata/old_re/dege_author_2016.csv  
 导出  
 psql -Ugpadmin -W -h192.168.1.28 -p12345 -dgpdpot  -c "copy tablename from stdout " > /opt/dpot/data/dt/pagerank.csv  
+直接读取密码
+PGPASSWORD=xxxx psql -h192.168.1.1 -Uxxxx  -p5432 -d xx -c "copy xx.xx to stdout" > path
 ```
 # 外部表  
 ```
